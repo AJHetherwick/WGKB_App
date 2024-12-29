@@ -208,6 +208,8 @@ def main() -> None:
                         step=1,
                         key='track_slider_' + str(track)
                     )
+                else:
+                    omit_pct = 0
 
             track_cols.append([desired_col, 'dot', desired_data, omit_pct, include_gene_loc])
         
