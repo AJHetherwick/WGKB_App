@@ -263,7 +263,7 @@ def main() -> None:
                 display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
 
             else:
-                st.title("Example Plots")
+                st.markdown("####Example Plots")
                 # example_plot_urls = [
                 #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image1.png",
                 #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image2.png"
@@ -572,7 +572,7 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
 
                             # Add solid line connecting data points
                             chr_data_sorted = chr_data.sort_values(by='Begin')
-                            track.line(chr_data_sorted['Begin'].tolist(), chr_data_sorted[desired_col].tolist(), ec=line_color, vmin=desired_data.min(), vmax=full_data[desired_col].max())
+                            track.line(chr_data_sorted['Begin'].tolist(), chr_data_sorted[desired_col].tolist(), color=line_color, vmin=desired_data.min(), vmax=full_data[desired_col].max())
 
                             # If user wants selected gene to be highlighted on current track
                             if include_gene_loc:
