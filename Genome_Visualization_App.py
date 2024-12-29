@@ -91,7 +91,7 @@ def main() -> None:
     st.session_state.setdefault("past_gene_ids", [])
 
     # Dropdown to show past searches
-    st.markdown(f"Gene IDs from past searches: {[gene_id.strip() for gene_id in st.session_state.past_gene_ids.split() if gene_id]}")
+    st.markdown(f"Gene IDs from past searches: {[gene_id.strip() for gene_id in st.session_state.past_gene_ids if gene_id]}")
 
     # User input for multiple gene IDs
     gene_id_input = st.text_input('Enter Gene IDs (space-separated) to visualize individually.')
