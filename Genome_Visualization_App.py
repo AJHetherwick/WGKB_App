@@ -102,12 +102,12 @@ def main() -> None:
     genomic_ranges = []
 
     if gene_id_input:
-        
-        # Save unique inputs to session state
-        if gene_id_input not in st.session_state.past_gene_ids:
-            st.session_state.past_gene_ids.append(gene_id_input)
             
         gene_ids = [gene_id.strip() for gene_id in gene_id_input.split() if gene_id.strip().isdigit()]
+
+        # Save unique inputs to session state
+        if gene_ids not in st.session_state.past_gene_ids:
+            st.session_state.past_gene_ids.append(gene_ids)
         
         # Ensure gene_ids are in correct format
         for gene_id in gene_ids:
@@ -175,7 +175,7 @@ def main() -> None:
         # Allow user to select which data they want in which tracks
         for track in range(num_tracks-track_correction):
 
-            desired_col = st.selectbox(f"Select which data you would like to visualize in track {track+1}:", available_cols)
+            desired_col = st.selectbox(f"Select the data you would like to visualize in track {track+1}:", available_cols)
             include_gene_loc = False
 
             if desired_col == 'Gene Location':
@@ -189,18 +189,25 @@ def main() -> None:
 
                 desired_data = full_data[desired_col]
 
+                if st.checkbox('Would you like to remove outliers for this track?'):
+
+                    z_score = (desired_data - desired_data.mean()) / desired_data.std()
+                    desired_data = desired_data[np.abs(z_score) <= 3]
+
                 if invalid_col(full_data, desired_col):
                     return
                 
-                # Add slider for user to omit certain values close to mean
-                omit_pct = st.slider(
-                    label="Choose a cutoff to omit points close to the mean",
-                    min_value=0,
-                    max_value=100,
-                    value=0,
-                    step=1,
-                    key='track_slider_' + str(track)
-                )
+                if st.checkbox('Would you like to omit points close to the median?'):
+
+                    # Add slider for user to omit certain values close to mean
+                    omit_pct = st.slider(
+                        label="Choose a cutoff to omit points close to the mean",
+                        min_value=0,
+                        max_value=100,
+                        value=0,
+                        step=1,
+                        key='track_slider_' + str(track)
+                    )
 
             track_cols.append([desired_col, 'dot', desired_data, omit_pct, include_gene_loc])
         
