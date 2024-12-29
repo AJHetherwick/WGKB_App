@@ -188,9 +188,7 @@ def main() -> None:
                 desired_data = full_data[desired_col]
 
                 if st.checkbox('Would you like to remove outliers for this track?', key=f'outlier_removal_{track}'):
-
-                    z_score = (desired_data - desired_data.mean()) / desired_data.std()
-                    desired_data = desired_data[np.abs(z_score) <= 3]
+                    desired_data = remove_outliers(desired_data)
 
                 if invalid_col(full_data, desired_col):
                     return
@@ -233,6 +231,10 @@ def main() -> None:
                     desired_data = full_data[desired_col]
 
                     include_gene_loc = st.checkbox('Would you like to highlight selected genes in this track?', key='include_gene_loc_' + str(track_type))
+
+                    if st.checkbox('Would you like to remove outliers for this track?', key='outlier_removal_' + str(track_type)):
+                        desired_data = remove_outliers(desired_data)
+
                     track_cols.append([desired_col, track_type, desired_data, 0, include_gene_loc])
 
         # Plot genes not associated with any chromosome
@@ -263,7 +265,7 @@ def main() -> None:
                 display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
 
             else:
-                st.markdown("####Example Plots")
+                st.markdown("#### Example Plots")
                 # example_plot_urls = [
                 #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image1.png",
                 #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image2.png"
@@ -274,6 +276,14 @@ def main() -> None:
         except (KeyError):
             st.error('WARNING: There was an error displaying the plot.')
             return
+
+
+def remove_outliers(desired_data):
+
+    z_score = (desired_data - desired_data.mean()) / desired_data.std()
+
+    return desired_data[np.abs(z_score) <= 3]
+
 
 
 def get_chrom_locations(organism_name: str) -> pd.DataFrame:
