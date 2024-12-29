@@ -98,7 +98,7 @@ def main() -> None:
     ) if st.session_state.past_gene_ids else ""
 
     # User input for multiple gene IDs
-    gene_id_input = st.text_input('Enter Gene IDs (space-separated)', value=selected_past_search)
+    gene_id_input = st.text_input('Enter Gene IDs (space-separated) to visualize individually.', value=selected_past_search)
     genomic_ranges = []
 
     if gene_id_input:
