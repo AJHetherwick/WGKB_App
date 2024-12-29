@@ -91,7 +91,7 @@ def main() -> None:
     st.session_state.setdefault("past_gene_ids", [])
 
     # Dropdown to show past searches
-    st.text("Gene IDs from past searches:", st.session_state.past_gene_ids)
+    st.text(f"Gene IDs from past searches: {st.session_state.past_gene_ids}")
 
     # User input for multiple gene IDs
     gene_id_input = st.text_input('Enter Gene IDs (space-separated) to visualize individually.')
