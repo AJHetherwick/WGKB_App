@@ -3,5 +3,6 @@ nbclient==0.8.0
 ncbi-datasets-pylib==16.6.1
 numpy==1.26.0
 pandas==2.1.1
-pyCirclize==1.7.1
+pycirclize==1.7.1
 streamlit==1.39.0
+biopython==1.84
