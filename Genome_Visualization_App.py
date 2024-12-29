@@ -266,12 +266,11 @@ def main() -> None:
 
             else:
                 st.markdown("#### Example Plots")
-                # example_plot_urls = [
-                #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image1.png",
-                #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image2.png"
-                # ]
-                # for url in example_plot_urls:
-                #     st.image(url, caption="Example Plot", use_column_width=True)
+                example_plot_urls = [
+                    "https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_regia_plot.png",
+                ]
+                for url in example_plot_urls:
+                    st.image(url, caption="Example Plot", use_column_width=True)
 
         except (KeyError):
             st.error('WARNING: There was an error displaying the plot.')
