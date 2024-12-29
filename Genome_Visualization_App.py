@@ -195,7 +195,7 @@ def main() -> None:
                 if invalid_col(full_data, desired_col):
                     return
                 
-                if st.checkbox('Would you like to omit points close to the median?'):
+                if st.checkbox('Would you like to omit points close to the median?', key=f'omit_points_{track}'):
 
                     # Add slider for user to omit certain values close to mean
                     omit_pct = st.slider(
