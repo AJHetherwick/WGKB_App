@@ -52,7 +52,7 @@ def main() -> None:
         st.markdown('To find the gene metadata file:\n'
                     '1. Go to https://www.ncbi.nlm.nih.gov/ \n'
                     '2. Search your species (Prunus persica for example) \n'
-                    '3. Scroll down and click \"View annotated genes\" \n'
+                    '3. Select your species then scroll down and click \"View annotated genes\" \n'
                     '4. On the table, click the square next to \'Genomic Location\' to select all rows \n'
                     '5. Click download as table, one sequence per gene')
         url = st.file_uploader('Upload genome annotation file with gene list (must be .txt or .tsv)', type=["txt", "tsv"])
@@ -165,6 +165,7 @@ def main() -> None:
         # For each track, allow user to specify what data goes on which track
         track_cols = []
         bar_color = None
+        line_color = None
 
         # Add 'Gene Location' column if user entered Gene IDs
         available_cols = list(full_data_cols)
@@ -212,7 +213,10 @@ def main() -> None:
                 include_gene_loc = False
 
                 if track_type == 'bar':
-                    bar_color = st.color_picker(f"Pick a color for bar plot", '#ff0000', key=f"color_picker_bar_track")
+                    bar_color = st.color_picker(f"Pick a color for bar track", '#ff0000', key="color_picker_bar_track")
+
+                elif track_type == 'line':
+                    line_color = st.color_picker(f'Pick a color for line track', '#ff0000', key='color_picker_line_track')
 
                 if invalid_col(full_data, desired_col):
                     return
@@ -248,7 +252,7 @@ def main() -> None:
         try:
             if st.button('Click to plot!'):
                 st.write('Plotting!')
-                display_circos_plot(data, full_data, track_cols, bar_color, genomic_ranges, species_selection, genome_meta)
+                display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
         except (KeyError):
             st.error('WARNING: There was an error displaying the plot.')
             return
@@ -436,7 +440,7 @@ def get_chrom_num(key: str, genome_meta=None) -> str:
     return chrom_name or key
 
 
-def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, genomic_ranges, species_selection, genome_meta) -> None:
+def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line_color, genomic_ranges, species_selection, genome_meta) -> None:
     
     # Prepare Circos plot with sectors (using chromosome sizes)
     sectors = {str(row[1]['Chromosome']): row[1]['Size (bp)'] for row in data.iterrows()}
@@ -550,7 +554,7 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, geno
 
                             # Add solid line connecting data points
                             chr_data_sorted = chr_data.sort_values(by='Begin')
-                            track.line(chr_data_sorted['Begin'].tolist(), chr_data_sorted[desired_col].tolist(), vmin=desired_data.min(), vmax=full_data[desired_col].max())
+                            track.line(chr_data_sorted['Begin'].tolist(), chr_data_sorted[desired_col].tolist(), ec=line_color, vmin=desired_data.min(), vmax=full_data[desired_col].max())
 
                             # If user wants selected gene to be highlighted on current track
                             if include_gene_loc:
