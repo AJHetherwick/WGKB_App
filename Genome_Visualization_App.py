@@ -102,8 +102,8 @@ def main() -> None:
         gene_ids = [gene_id.strip() for gene_id in gene_id_input.split() if gene_id.strip().isdigit()]
 
         # Save unique inputs to session state
-        if gene_id_input not in st.session_state.past_gene_ids:
-            st.session_state.past_gene_ids.append(gene_id_input)
+        if gene_ids not in st.session_state.past_gene_ids:
+            st.session_state.past_gene_ids.append(gene_id for gene_id in gene_ids)
         
         # Ensure gene_ids are in correct format
         for gene_id in gene_ids:
