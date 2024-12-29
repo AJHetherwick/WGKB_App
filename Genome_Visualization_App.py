@@ -146,6 +146,8 @@ def main() -> None:
             else:
                 st.write("Matching Data:", selected_data)
 
+    show_example_plots_bool = True
+
     if full_data is not None or gene_id_input:
         
         # Allow user to specify how many tracks they want to visualize
@@ -263,18 +265,24 @@ def main() -> None:
 
                 st.write('Plotting!')
                 display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
-
-            else:
-                st.markdown("#### Example Plots")
-                example_plot_urls = [
-                    "https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_regia_plot.png",
-                ]
-                for url in example_plot_urls:
-                    st.image(url, caption="Example Plot", use_column_width=True)
+            
+            show_example_plots_bool = False
 
         except (KeyError):
             st.error('WARNING: There was an error displaying the plot.')
             return
+    
+    if show_example_plots_bool:
+        show_example_plots()
+
+
+def show_example_plots() -> None:
+    st.markdown("#### Example Plots")
+    example_plot_urls = [
+        "https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_regia_plot.png",
+    ]
+    for url in example_plot_urls:
+        st.image(url, caption="Example Plot", use_column_width=True)
 
 
 def remove_outliers(desired_data):
