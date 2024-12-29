@@ -91,10 +91,14 @@ def main() -> None:
     st.session_state.setdefault("past_gene_ids", [])
 
     # Dropdown to show past searches
-    selected_past_search = st.session_state.past_gene_ids
+    selected_past_search = st.text(
+        "Gene IDs from past searches:", 
+        options=[""] + st.session_state.past_gene_ids, 
+        help="Select a past search result to auto-fill the Gene ID input."
+    ) if st.session_state.past_gene_ids else ""
 
     # User input for multiple gene IDs
-    gene_id_input = st.text_input('Enter Gene IDs (space-separated) to visualize individually.', value=selected_past_search)
+    gene_id_input = st.text_input('Enter Gene IDs (space-separated) to visualize individually.')
     genomic_ranges = []
 
     if gene_id_input:
