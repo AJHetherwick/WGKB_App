@@ -187,7 +187,7 @@ def main() -> None:
 
                 desired_data = full_data[desired_col]
 
-                if st.checkbox('Would you like to remove outliers for this track?'):
+                if st.checkbox('Would you like to remove outliers for this track?', key=f'outlier_removal_{track}'):
 
                     z_score = (desired_data - desired_data.mean()) / desired_data.std()
                     desired_data = desired_data[np.abs(z_score) <= 3]
@@ -258,8 +258,19 @@ def main() -> None:
         # Plot main Circos plot
         try:
             if st.button('Click to plot!'):
+
                 st.write('Plotting!')
                 display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
+
+            else:
+                st.title("Example Plots")
+                # example_plot_urls = [
+                #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image1.png",
+                #     "https://raw.githubusercontent.com/username/repo/branch/path/to/image2.png"
+                # ]
+                # for url in example_plot_urls:
+                #     st.image(url, caption="Example Plot", use_column_width=True)
+
         except (KeyError):
             st.error('WARNING: There was an error displaying the plot.')
             return
