@@ -7,30 +7,8 @@ from ncbi.datasets.openapi import ApiClient
 from ncbi.datasets.openapi.rest import ApiException
 import numpy as np
 from Bio import Entrez
+import textwrap
 import time
-
-def fetch_species_suggestions(query):
-    """Fetch species suggestions using the Entrez API."""
-    try:
-        handle = Entrez.esearch(db="taxonomy", term=query, retmax=5)
-        record = Entrez.read(handle)
-        handle.close()
-        time.sleep(0.4)  # Wait 400 ms (3 requests/second = 1 request/0.333s)
-        
-        if 'IdList' in record and record['IdList']:
-            species_names = []
-            for tax_id in record['IdList']:
-                tax_handle = Entrez.efetch(db="taxonomy", id=tax_id, retmode="xml")
-                tax_record = Entrez.read(tax_handle)
-                tax_handle.close()
-                species_names.append(tax_record[0]['ScientificName'])
-                time.sleep(0.4)  # Rate limiting for subsequent requests
-            return species_names
-        else:
-            return []
-    except Exception as e:
-        st.error(f"Error fetching species suggestions: {e}")
-        return []
         
 def main() -> None:
 
@@ -182,6 +160,7 @@ def main() -> None:
                 
                 desired_data = genomic_ranges
                 omit_pct = 0
+                rem_outliers_bool = False
 
             else:
                 if gene_id_input:
@@ -189,17 +168,16 @@ def main() -> None:
 
                 desired_data = full_data[desired_col]
 
-                if st.checkbox('Would you like to remove outliers for this track?', key=f'outlier_removal_{track}'):
-                    desired_data = remove_outliers(desired_data)
+                rem_outliers_bool = st.checkbox('Would you like to remove outliers for this track?', key=f'outlier_removal_{track}')
 
                 if invalid_col(full_data, desired_col):
                     return
                 
                 if st.checkbox('Would you like to omit points close to the median?', key=f'omit_points_{track}'):
 
-                    # Add slider for user to omit certain values close to mean
+                    # Add slider for user to omit certain values close to median
                     omit_pct = st.slider(
-                        label="Choose a cutoff to omit points close to the mean",
+                        label="Choose a cutoff to omit points close to the median",
                         min_value=0,
                         max_value=100,
                         value=0,
@@ -209,12 +187,15 @@ def main() -> None:
                 else:
                     omit_pct = 0
 
-            track_cols.append([desired_col, 'dot', desired_data, omit_pct, include_gene_loc])
+            track_cols.append([desired_col, 'dot', desired_data, omit_pct, rem_outliers_bool, include_gene_loc])
         
         # Add data to track_cols dict when user wants line or bar track
         for track_type in ['line' if line else None, 'bar' if bar else None]:
 
             if track_type:
+
+                # Line and bar tracks should not visualize Gene Location
+                available_cols.remove('Gene Location')
 
                 desired_col = st.selectbox(f"Select which data you would like to visualize in {track_type} track:", available_cols)
                 include_gene_loc = False
@@ -234,10 +215,9 @@ def main() -> None:
 
                     include_gene_loc = st.checkbox('Would you like to highlight selected genes in this track?', key='include_gene_loc_' + str(track_type))
 
-                    if st.checkbox('Would you like to remove outliers for this track?', key='outlier_removal_' + str(track_type)):
-                        desired_data = remove_outliers(desired_data)
+                    rem_outliers_bool = st.checkbox('Would you like to remove outliers for this track?', key='outlier_removal_' + str(track_type))
 
-                    track_cols.append([desired_col, track_type, desired_data, 0, include_gene_loc])
+                    track_cols.append([desired_col, track_type, desired_data, 0, rem_outliers_bool, include_gene_loc])
 
         # Plot genes not associated with any chromosome
         if st.checkbox('Would you like to plot the genes not associated with a chromosome?'):
@@ -245,7 +225,7 @@ def main() -> None:
             desired_col = st.selectbox(f"Select which data you would like to visualize in remaining genes track:", available_cols)
             rem_genes_color = st.color_picker(f"Pick a color for remaining genes plot", '#ff0000', key=f"rem_genes_color")
             omit_pct = st.slider(
-                    label="Choose a cutoff to omit points close to the mean",
+                    label="Choose a cutoff to omit points close to the median",
                     min_value=0,
                     max_value=100,
                     value=0,
@@ -266,7 +246,7 @@ def main() -> None:
                 st.write('Plotting!')
                 display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
             
-            show_example_plots_bool = False
+                show_example_plots_bool = False
 
         except (KeyError):
             st.error('WARNING: There was an error displaying the plot.')
@@ -276,6 +256,30 @@ def main() -> None:
         show_example_plots()
 
 
+def fetch_species_suggestions(query):
+    """Fetch species suggestions using the Entrez API."""
+    try:
+        handle = Entrez.esearch(db="taxonomy", term=query, retmax=5)
+        record = Entrez.read(handle)
+        handle.close()
+        time.sleep(0.4)  # Wait 400 ms (3 requests/second = 1 request/0.333s)
+        
+        if 'IdList' in record and record['IdList']:
+            species_names = []
+            for tax_id in record['IdList']:
+                tax_handle = Entrez.efetch(db="taxonomy", id=tax_id, retmode="xml")
+                tax_record = Entrez.read(tax_handle)
+                tax_handle.close()
+                species_names.append(tax_record[0]['ScientificName'])
+                time.sleep(0.4)  # Rate limiting for subsequent requests
+            return species_names
+        else:
+            return []
+    except Exception as e:
+        st.error(f"Error fetching species suggestions: {e}")
+        return []
+
+
 def show_example_plots() -> None:
     st.markdown("#### Example Plots")
     example_plot_urls = [
@@ -283,14 +287,6 @@ def show_example_plots() -> None:
     ]
     for url in example_plot_urls:
         st.image(url, caption="Example Plot", use_column_width=True)
-
-
-def remove_outliers(desired_data):
-
-    z_score = (desired_data - desired_data.mean()) / desired_data.std()
-
-    return desired_data[np.abs(z_score) <= 3]
-
 
 
 def get_chrom_locations(organism_name: str) -> pd.DataFrame:
@@ -477,14 +473,20 @@ def get_chrom_num(key: str, genome_meta=None) -> str:
 
 def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line_color, genomic_ranges, species_selection, genome_meta) -> None:
     
+    # Get desired_data maximum to give space for yticks
+    maxes = [max(desired_data) for desired_col, _, desired_data, _, _, _ in track_cols if desired_col != 'Gene Location']
+
     # Prepare Circos plot with sectors (using chromosome sizes)
     sectors = {str(row[1]['Chromosome']): row[1]['Size (bp)'] for row in data.iterrows()}
-    circos = Circos(sectors, space=5)
+    circos = Circos(sectors, space=4, start=0, end=360 - (len(str(round(max(maxes)))) if maxes else 0))
 
     lower = 105
 
     # Format: track_cols[0] = [desired_col, plot_type, desired_data, omit_pct, include_gene_loc]
-    for index, [desired_col, plot_type, desired_data, omit_pct, include_gene_loc] in enumerate(track_cols):
+    for index, [desired_col, plot_type, desired_data, omit_pct, rem_outliers_bool, include_gene_loc] in enumerate(track_cols):
+
+        # omit_pct correction
+        omit_pct = np.abs(100-omit_pct)
 
         upper = lower - 5
         if desired_col == 'Gene Location':
@@ -494,10 +496,6 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
         else:
             width = 50/len(track_cols)
         lower = upper - width
-
-        # Get the colors for given column if it is not Gene Location
-        if desired_col != 'Gene Location':
-            full_data['color_' + str(index)] = get_colormap(desired_data)
 
         for chrom_num, sector_obj in enumerate(circos.sectors):
             # Map the sector name using get_chrom_num
@@ -535,16 +533,15 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
             if desired_col == 'Gene Location':
                 
                 # Add y-ticks only on the left side of the chr01 sector
-                if get_chrom_num(sector_obj.name) == 'chr01':  
-                    track.yticks([0, 1], list("-+"), vmin=0, vmax=1, side="left")
-                elif get_chrom_num(sector_obj.name) == '1':  
+                if chrom_num == 0:  
                     track.yticks([0, 1], list("-+"), vmin=0, vmax=1, side="left")
 
             # Only add tick marks to tracks that are not bar or line    
             elif plot_type not in ['bar', 'line']:
-                if get_chrom_num(sector_obj.name) == 'chr01': 
-                    track.yticks(y=np.linspace(desired_data.min(), desired_data.max(), num=5), \
-                                labels=[f"{round(tick)}" for tick in np.linspace(desired_data.min(), desired_data.max(), num=5)], \
+                if chrom_num == 0: 
+                    num_ticks = 5 if len(track_cols) <= 3 else 3
+                    track.yticks(y=np.linspace(desired_data.min(), desired_data.max(), num=num_ticks), \
+                                labels=[f"{round(tick)}" for tick in np.linspace(desired_data.min(), desired_data.max(), num=num_ticks)], \
                                 vmin=desired_data.min(), vmax=desired_data.max(), side="left", label_size=7-index)
         
             # If given track is not Gene Location
@@ -564,18 +561,27 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
                     gene_full_data['gene_color'] = gene_full_data['Gene ID'].map(genomic_ranges_dict)
                     gene_chr_data = gene_full_data[gene_full_data['Chromosome'] == str(chrom_num + 1)].reset_index(drop=True)
 
+                    # Remove outliers if user selected
+                    if rem_outliers_bool:
+                        z_score = (chr_data[desired_col]-chr_data[desired_col].mean()) / chr_data[desired_col].std()
+                        chr_data = chr_data[np.abs(z_score) <= 3]
+
                     if plot_type == 'dot':
 
-                        # Remove points close to the mean if user selected:
+                        # Remove points close to the median if user selected
                         if omit_pct > 0:
 
-                            lower_bound = desired_data.quantile((100 - omit_pct) / 200)
-                            upper_bound = desired_data.quantile(1 - (100 - omit_pct) / 200)
+                            lower_bound = chr_data[desired_col].quantile(omit_pct / 200)
+                            upper_bound = chr_data[desired_col].quantile(1 - (omit_pct / 200))
 
                             chr_data = chr_data[(chr_data[desired_col] < lower_bound) | (chr_data[desired_col] > upper_bound)]
 
+                        # Get colors for column
+                        if desired_col != 'Gene Location':
+                            chr_data['color_' + str(index)] = get_colormap(chr_data[desired_col])
+
                         track.scatter(chr_data['Begin'].tolist(), chr_data[desired_col].tolist(), color=chr_data['color_' + str(index)], 
-                                      cmap='coolwarm', vmin=desired_data.min(), vmax=desired_data.max(), s=5)
+                                      cmap='coolwarm', vmin=chr_data[desired_col].min(), vmax=chr_data[desired_col].max(), s=5)
 
                         # If user wants selected gene to be highlighted on current track
                         if include_gene_loc:
@@ -600,12 +606,12 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
 
                             # Ensure the column has values in it
                             vmin = 0 if full_data[desired_col].min() > 0 else full_data[desired_col].min()
-                            track.bar(chr_data['Begin'].tolist(), chr_data[desired_col].tolist(), ec=bar_color, lw=0.9, vmin=vmin, vmax=full_data[desired_col].max())
+                            track.bar(chr_data['Begin'].tolist(), chr_data[desired_col].tolist(), ec=bar_color, lw=0.9, vmin=vmin, vmax=chr_data[desired_col].max())
 
                             # If user wants selected gene to be highlighted on current track
                             if include_gene_loc:
                                 track.bar(gene_chr_data['Begin'].tolist(), gene_chr_data[desired_col].tolist(), ec=gene_chr_data['gene_color'], 
-                                          lw=0.9, vmin=vmin, vmax=full_data[desired_col].max())
+                                          lw=0.9, vmin=vmin, vmax=chr_data[desired_col].max())
 
             # If user manually included gene IDs
             else:
@@ -615,7 +621,7 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
                         track.scatter([x], [y], color=color_to_use, s=20)
 
     # Add colorbar for expression level columns
-    exp_cols = [[desired_col, plot_type, index] for index, [desired_col, plot_type, _, _, _] in enumerate(track_cols) if desired_col != 'Gene Location']
+    exp_cols = [[desired_col, plot_type, index] for index, [desired_col, plot_type, _, _, _, _] in enumerate(track_cols) if desired_col != 'Gene Location']
 
     for index, (label, plot_type, track_index) in enumerate(exp_cols):
 
@@ -651,20 +657,23 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
 
     # Render the plot using Matplotlib
     fig = circos.plotfig()
+    
+    wrapped_labels = [
+        "\n".join(textwrap.wrap(species_selection, width=20, break_long_words=False))
+    ]
 
     species_legend = circos.ax.legend(
-        handles=[plt.Line2D([0], [0], color="black", linestyle='None')],
-        labels=[species_selection],
+        handles=[plt.Line2D([0], [0], color="black", linestyle='None') for _ in species_selection],
+        labels=wrapped_labels,  # Use wrapped labels
         bbox_to_anchor=(0.48, 0.5),
         loc='center',
-        fontsize=12,
-        prop={'style': 'italic'}
-        )
+        prop={'size': 12 - (len(track_cols))//2, 'style': 'italic'}
+    )
  
     circos.ax.add_artist(species_legend)
 
     # Add legend for selected gene IDs
-    if 'Gene Location' in [col for col, _, _, _, _ in track_cols]:
+    if 'Gene Location' in [col for col, _, _, _, _, _ in track_cols]:
          
         scatter_legend = circos.ax.legend(
             handles=[plt.Line2D([0], [0], color=row[-1], marker='o', ls='None', ms=8) for row in genomic_ranges],  
@@ -682,7 +691,7 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
     # Add legend for sliders
     removal_legend_items = [
         (f"Track {track_index + 1}: Omit {omit_pct}% around median", track_index)
-        for track_index, (_, _, _, omit_pct, _) in enumerate(track_cols)
+        for track_index, (_, _, _, omit_pct, _, _) in enumerate(track_cols)
         if omit_pct > 0
     ]
     # Add removal legend if there are items
@@ -698,7 +707,7 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
         removal_legend = circos.ax.legend(
             handles=legend_handles,  
             labels=legend_labels,  
-            bbox_to_anchor=(-0.17, 0),
+            bbox_to_anchor=(-0.16, 0),
             loc='lower left',
             title="Median Percentile Removal",
             fontsize=6,
