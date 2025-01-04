@@ -322,9 +322,9 @@ def fetch_species_suggestions(query):
 def show_example_plots() -> None:
     st.markdown("#### Example Plots")
     example_plot_urls = [
-        "https://github.com/AJHetherwick/WGKB_App/blob/9b5bdbadcae8e9ebcc9d4a284820d0ed19fbe9fb/juglans_regia_plot.png",
-        "https://github.com/AJHetherwick/WGKB_App/blob/9b5bdbadcae8e9ebcc9d4a284820d0ed19fbe9fb/juglans_microcarpa_plot.png",
-        "https://github.com/AJHetherwick/WGKB_App/blob/9b5bdbadcae8e9ebcc9d4a284820d0ed19fbe9fb/juglans_microcarpa_rem_genes.png"
+        "https://raw.githubusercontent.com/AJHetherwick/WGKB_App/9b5bdbadcae8e9ebcc9d4a284820d0ed19fbe9fb/juglans_regia_plot.png",
+        "https://raw.githubusercontent.com/AJHetherwick/WGKB_App/9b5bdbadcae8e9ebcc9d4a284820d0ed19fbe9fb/juglans_microcarpa_plot.png",
+        "https://raw.githubusercontent.com/AJHetherwick/WGKB_App/9b5bdbadcae8e9ebcc9d4a284820d0ed19fbe9fb/juglans_microcarpa_rem_genes.png"
     ]
 
     for url in example_plot_urls:
