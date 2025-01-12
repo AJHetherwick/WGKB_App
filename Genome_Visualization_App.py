@@ -14,7 +14,10 @@ def main() -> None:
 
     st.title('Custom Circos Plot Generator with Gene Metadata Integration')
     st.markdown("###### Created by Adam Hetherwick, Hibiki Ono, Nitin Kanchi, and Dr. Paulo Zaini")
-
+    
+    # Add vertical spacing
+    st.markdown("<br><br>", unsafe_allow_html=True)
+        
     # Feedback button
     st.sidebar.markdown("### Feedback & Suggestions")
     if st.sidebar.button("Report Feedback"):
@@ -51,7 +54,9 @@ def main() -> None:
     elif species_selection == 'Juglans microcarpa x Juglans regia':
         url = 'https://raw.githubusercontent.com/nitink23/WGKB/main/juglans_microcarpa.tsv'
 
-    st.markdown("#### Enter Gene IDs and/or a gene expression file to visualize")
+    st.markdown("#### Upload gene expression file to visualize")
+
+    st.markdown('Data structure is genes on rows and samples on columns. NCBI gene IDs (example 108986811) must occur in at least one column, not necessarily the first column.')
 
     # Allow user to upload optional gene expression file
     gene_exp_file = st.file_uploader('Upload a gene expression file (optional, must be .csv, .xls or .xlsx)', type=["csv", "xls", "xlsx"])
