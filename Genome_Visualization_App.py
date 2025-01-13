@@ -12,7 +12,7 @@ import time
         
 def main() -> None:
 
-    st.title('Custom Circos Plot Generator with Gene Metadata Integration')
+    st.title('Custom Circos Plot Generator')
     st.markdown("###### Created by Adam Hetherwick, Hibiki Ono, Nitin Kanchi, and Dr. Paulo Zaini")
     
     # Add vertical spacing
@@ -33,10 +33,14 @@ def main() -> None:
         
         if species_query:
             suggestions = fetch_species_suggestions(species_query)
-            if suggestions:
+            if not suggestions:
+                st.warning(f"No suggestions found for {species_query}. Please check the spelling")
+            elif suggestions[0] != str(species_query):
+
                 species_selection = st.selectbox('Did you mean:', suggestions)
             else:
-                st.warning('No suggestions found. Please check the spelling.')
+                species_selection = species_query
+
         st.markdown('To find the gene metadata file:\n'
                     '1. Go to https://www.ncbi.nlm.nih.gov/ \n'
                     '2. Search your species (Prunus persica for example) \n'
