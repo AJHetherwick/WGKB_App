@@ -42,8 +42,8 @@ def main() -> None:
                 species_selection = species_query
 
         st.markdown('To find the gene metadata file:\n'
-                    '1. Go to https://www.ncbi.nlm.nih.gov/ \n'
-                    '2. Search your species (Prunus persica for example) \n'
+                    '1. Go to https://www.ncbi.nlm.nih.gov/datasets/ \n'
+                    '2. In the NCBI Datasets search bar, search your species (Prunus persica for example) \n'
                     '3. Select your species then scroll down and click \"View annotated genes\" \n'
                     '4. On the table, click the square next to \'Genomic Location\' to select all rows \n'
                     '5. Click download as table, one sequence per gene')
@@ -69,7 +69,7 @@ def main() -> None:
     if url:
         genome_meta = pd.read_csv(url, delimiter='\t')
 
-    full_data, full_data_cols = None, []
+    full_data, full_data_cols, gene_exp_df = None, [], None
 
     if gene_exp_file:
         try:
@@ -80,6 +80,10 @@ def main() -> None:
 
         except KeyError:
             st.warning('WARNING: The columns entered cannot be parsed correctly.')
+
+    elif url:
+        full_data = genome_meta
+        full_data_cols = genome_meta.columns
 
     # Initialize session state for past searches
     st.session_state.setdefault("past_gene_ids", [])
@@ -143,15 +147,15 @@ def main() -> None:
     show_example_plots_bool = True
     z_score_rem = 4
 
-    if full_data is not None or gene_id_input:
+    if url and (gene_exp_df is not None or gene_id_input):
         
         # Allow user to specify how many tracks they want to visualize
-        available_tracks = [1, 2, 3, 4, 5] if full_data is not None else [1]
+        available_tracks = [1, 2, 3, 4, 5] if gene_exp_df is not None else [1]
         num_tracks = st.selectbox("How many tracks would you like to visualize? (Upload gene expression file to view more than 1 track)", available_tracks)
         track_correction = 0
         line, bar = False, False
 
-        if full_data is not None and num_tracks >= 1:
+        if gene_exp_df is not None and num_tracks >= 1:
             st.markdown('Bar and line tracks can only be visualized on bottom track.')
             bar = st.checkbox("Would you like one of these tracks to be a bar plot?")
             line = st.checkbox("Would you like one of these tracks to be a line plot?")
@@ -183,10 +187,11 @@ def main() -> None:
 
             else:
 
-                if gene_id_input:
+                if gene_id_input and desired_col != 'Gene Location':
                     include_gene_loc = st.checkbox('Would you like to highlight selected genes in this track?', key='include_gene_loc_' + str(track))
 
-                desired_data = full_data[desired_col]
+                full_data_tmp = full_data.dropna(subset=[desired_col])
+                desired_data = full_data_tmp[desired_col]
 
                 rem_outliers_bool = st.checkbox('Would you like to remove outliers for this track?', key=f'outlier_removal_{track}')
 
@@ -241,7 +246,8 @@ def main() -> None:
                 
                 if desired_col != 'Gene Location':
                     
-                    desired_data = full_data[desired_col]
+                    full_data_tmp = full_data.dropna(subset=[desired_col])
+                    desired_data = full_data_tmp[desired_col]
 
                     if gene_id_input:
                         include_gene_loc = st.checkbox('Would you like to highlight selected genes in this track?', key='include_gene_loc_' + str(track_type))
@@ -264,7 +270,7 @@ def main() -> None:
             st.markdown(f"\nThe annotated genes table for {species_selection} has {full_data['Chromosome'].isna().sum()} genes not associated with a chromosome.")
 
             if st.checkbox('Would you like to plot the genes not associated with a chromosome? \n'
-                           'This will be a separate plot where the x-axis is index in the table, and y-axis is a user selected column.'):
+                               'This will be a separate plot where the x-axis is index in the table, and y-axis is a user selected column.'):
 
                 desired_col = st.selectbox(f"Select which data you would like to visualize in remaining genes track:", available_cols)
                 rem_genes_color = st.color_picker(f"Pick a color for remaining genes plot", '#ff0000', key=f"rem_genes_color")
@@ -276,7 +282,7 @@ def main() -> None:
                         step=1,
                         key='track_slider_rem_genes'
                         )
-                
+
                 rem_outliers_bool = st.checkbox('Would you like to remove outliers for this track?', key='outlier_removal_rem_genes_track')
 
                 if rem_outliers_bool:
@@ -585,13 +591,19 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
         else:
             sector_df = full_data
 
+        if desired_col != 'Gene Location':
+            sector_df = sector_df.dropna(subset=[desired_col])
+
         gene_full_data = sector_df[sector_df['Gene ID'].isin(genomic_ranges_ids)].copy()
         gene_full_data['gene_color'] = gene_full_data['Gene ID'].map(genomic_ranges_dict)
 
         # Check to see if user wants to visualize genes that are excluded because they are outliers
         for gene_id in genomic_ranges_ids:
             if int(gene_id) not in gene_full_data['Gene ID'].astype(int).values:
-                st.warning(f'Gene ID {gene_id} has a value considered to be an outlier and will be excluded from {desired_col} track.')
+                if rem_outliers_bool:
+                    st.warning(f'Gene ID {gene_id} has a value considered to be an outlier and will be excluded from {desired_col} track.')
+                else:
+                    st.warning(f'Gene ID {gene_id} is missing its value for the {desired_col} track and will be excluded.')
 
         for chrom_num, sector_obj in enumerate(circos.sectors):
             # Map the sector name using get_chrom_num
@@ -743,7 +755,9 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
     add_species_title(species_selection, circos, num_tracks=len(track_cols))
 
     # Add legend for selected gene IDs
-    if genomic_ranges:
+    include_gene_loc_list = [include_gene_loc for _, _, _, _, _, _, include_gene_loc in track_cols]
+
+    if True in include_gene_loc_list:
 
         scatter_legend = circos.ax.legend(
             handles=[plt.Line2D([0], [0], color=row[-1], marker='o', ls='None', ms=8) for row in genomic_ranges],  
@@ -818,6 +832,7 @@ def add_median_legend(circos_obj, handles, labels, x: int, y: int) -> None:
 def plot_rem_genes(full_data, desired_col, omit_pct, color, species_selection, rem_outliers_bool, z_score_rem) -> None:
 
     rem_genes_df = full_data[pd.isna(full_data['Chromosome'])].reset_index()
+    rem_genes_df = rem_genes_df.dropna(subset=[desired_col])
     desired_data = rem_genes_df[desired_col]
 
     if rem_outliers_bool:
