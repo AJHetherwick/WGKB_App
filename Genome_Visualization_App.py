@@ -756,13 +756,14 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
 
     # Add legend for selected gene IDs
     include_gene_loc_list = [include_gene_loc for _, _, _, _, _, _, include_gene_loc in track_cols]
+    exp_cols_all = [col for col, _, _, _, _, _, _ in track_cols]
 
-    if True in include_gene_loc_list:
+    if True in include_gene_loc_list or 'Gene Location' in exp_cols_all:
 
         scatter_legend = circos.ax.legend(
             handles=[plt.Line2D([0], [0], color=row[-1], marker='o', ls='None', ms=8) for row in genomic_ranges],  
             labels=[row[4] for row in genomic_ranges],  
-            bbox_to_anchor=(-0.12, 1.1),
+            bbox_to_anchor=(-0.1, 1.1),
             loc='upper left',
             fontsize=8,
             title="Gene ID",
