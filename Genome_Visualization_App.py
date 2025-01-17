@@ -53,10 +53,10 @@ def main() -> None:
         data = get_chrom_locations(species_selection)
     
     if species_selection == 'Juglans regia':
-        url = 'https://raw.githubusercontent.com/nitink23/WGKB/main/juglans_regia.tsv'
+        url = 'https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_regia.tsv'
 
     elif species_selection == 'Juglans microcarpa x Juglans regia':
-        url = 'https://raw.githubusercontent.com/nitink23/WGKB/main/juglans_microcarpa.tsv'
+        url = 'https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_microcarpa.tsv' # remove /refs/heads if not working
 
     st.markdown("#### Upload gene expression file to visualize")
 
