@@ -56,7 +56,7 @@ def main() -> None:
         url = 'https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_regia.tsv'
 
     elif species_selection == 'Juglans microcarpa x Juglans regia':
-        url = 'https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_microcarpa.tsv' # remove /refs/heads if not working
+        url = 'https://raw.githubusercontent.com/AJHetherwick/WGKB_App/refs/heads/main/juglans_microcarpa.tsv'
 
     st.markdown("#### Upload gene expression file to visualize")
 
@@ -317,28 +317,20 @@ def main() -> None:
         show_example_plots()
 
 
-def fetch_species_suggestions(query):
-    """Fetch species suggestions using the Entrez API."""
-    try:
-        handle = Entrez.esearch(db="taxonomy", term=query, retmax=5)
-        record = Entrez.read(handle)
-        handle.close()
-        time.sleep(0.4)  # Wait 400 ms (3 requests/second = 1 request/0.333s)
-        
-        if 'IdList' in record and record['IdList']:
-            species_names = []
-            for tax_id in record['IdList']:
-                tax_handle = Entrez.efetch(db="taxonomy", id=tax_id, retmode="xml")
-                tax_record = Entrez.read(tax_handle)
-                tax_handle.close()
-                species_names.append(tax_record[0]['ScientificName'])
-                time.sleep(0.4)  # Rate limiting for subsequent requests
-            return species_names
-        else:
-            return []
-    except Exception as e:
-        st.error(f"Error fetching species suggestions: {e}")
+def fetch_species_suggestions(query) -> list:
+    """Fetch species suggestions using the GeneApi."""
+
+    gene_api = GeneApi()
+    results = gene_api.gene_tax_name_query(query)
+    name_results = []
+
+    if 'sci_name_and_ids' in results:
+        for dict in results['sci_name_and_ids']:
+            if 'sci_name' in dict:
+                name_results.append(dict['sci_name'])
+    else:
         return []
+    return name_results
 
 
 def show_example_plots() -> None:
