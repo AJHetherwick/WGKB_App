@@ -6,9 +6,7 @@ from ncbi.datasets import GeneApi, GenomeApi
 from ncbi.datasets.openapi import ApiClient
 from ncbi.datasets.openapi.rest import ApiException
 import numpy as np
-from Bio import Entrez
 import textwrap
-import time
         
 def main() -> None:
 
