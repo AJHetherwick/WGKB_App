@@ -117,7 +117,7 @@ def main() -> None:
         for index, row in enumerate(genomic_ranges):
 
             # Assign a unique key to each color picker using the gene ID and index
-            color = st.color_picker(f"Pick a color for Gene ID {row[4]}", '#ff0000', key=f"color_picker_{row[4]}_{index}")
+            color = st.color_picker(f"Pick a color for Gene ID {row[4]}", '#808080', key=f"color_picker_{row[4]}_{index}")
             row.append(color)
 
         # Check to see if genomic ranges are valid, if invalid display warning and stop function
