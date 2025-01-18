@@ -234,10 +234,10 @@ def main() -> None:
                 include_gene_loc = False
 
                 if track_type == 'bar':
-                    bar_color = st.color_picker(f"Pick a color for bar track", '#ff0000', key="color_picker_bar_track")
+                    bar_color = st.color_picker(f"Pick a color for bar track", '#808080', key="color_picker_bar_track")
 
                 elif track_type == 'line':
-                    line_color = st.color_picker(f'Pick a color for line track', '#ff0000', key='color_picker_line_track')
+                    line_color = st.color_picker(f'Pick a color for line track', '#808080', key='color_picker_line_track')
 
                 if invalid_col(full_data, desired_col):
                     return
@@ -271,7 +271,7 @@ def main() -> None:
                                'This will be a separate plot where the x-axis is index in the table, and y-axis is a user selected column.'):
 
                 desired_col = st.selectbox(f"Select which data you would like to visualize in remaining genes track:", available_cols)
-                rem_genes_color = st.color_picker(f"Pick a color for remaining genes plot", '#ff0000', key=f"rem_genes_color")
+                rem_genes_color = st.color_picker(f"Pick a color for remaining genes plot", '#808080', key=f"rem_genes_color")
                 omit_pct = st.slider(
                         label="Choose a cutoff to omit points close to the median",
                         min_value=0,
@@ -459,7 +459,7 @@ def get_colormap(data_col):
 
     # Handle case where data_col is empty or has NaNs
     if vectorized_color_col.size == 0 or np.isnan(vectorized_color_col).all():
-        return ['#ff0000'] * len(data_col)
+        return ['#808080'] * len(data_col)
     
     # Filter out NaNs for normalization
     finite_data = vectorized_color_col[np.isfinite(vectorized_color_col)]
