@@ -266,13 +266,15 @@ def main() -> None:
         rename_cols_dict = {}
 
         # User specification on gene_id legend
-        if len(gene_ids) > 10:
+        if gene_id_input:
 
-            # Add vertical spacing
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            st.markdown("If you manually inputted more than 10 selected Gene IDs, sometimes the legend overlaps with the plot.")
-            omit_gene_id_legend = st.checkbox("Would you like to omit Gene ID legend in the upper left corner?")
+            if len(gene_ids) > 10:
+            
+                # Add vertical spacing
+                st.markdown("<br>", unsafe_allow_html=True)
+    
+                st.markdown("If you manually inputted more than 10 selected Gene IDs, sometimes the legend overlaps with the plot.")
+                omit_gene_id_legend = st.checkbox("Would you like to omit Gene ID legend in the upper left corner?")
 
         # Allow user to rename cols in color bar legend top right
         if any(len(desired_col) > 30 for desired_col, *_ in track_cols):
