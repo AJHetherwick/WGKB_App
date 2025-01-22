@@ -262,8 +262,38 @@ def main() -> None:
 
                     track_cols.append([desired_col, track_type, desired_data, 0, rem_outliers_bool, z_score_rem, include_gene_loc])
 
+        omit_gene_id_legend = False
+        rename_cols_dict = {}
+
+        # User specification on gene_id legend
+        if len(gene_ids) > 10:
+
+            # Add vertical spacing
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            st.markdown("If you manually inputted more than 10 selected Gene IDs, sometimes the legend overlaps with the plot.")
+            omit_gene_id_legend = st.checkbox("Would you like to omit Gene ID legend in the upper left corner?")
+
+        # Allow user to rename cols in color bar legend top right
+        if any(len(desired_col) > 30 for desired_col, *_ in track_cols):
+
+            # Add vertical spacing
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            st.markdown("One of the expression column headers you are visualizing may overlap with the plot.")
+            rename_cols = st.checkbox("Would you like to rename columns as seen in the color bars in the upper right corner?")
+
+            if rename_cols:
+                for index, (desired_col, *_) in enumerate(track_cols):
+                    if desired_col != 'Gene Location':
+                        rename_cols_dict[desired_col] = st.text_input(f"Enter the text you would like to display instead of \'{desired_col}\'.",
+                                                                       value=desired_col, key=str(index) + '_' + desired_col)
+
         # Plot genes not associated with any chromosome
         if full_data['Chromosome'].isna().any():
+
+            # Add vertical spacing
+            st.markdown("<br>", unsafe_allow_html=True)
 
             st.markdown(f"\nThe annotated genes table for {species_selection} has {full_data['Chromosome'].isna().sum()} genes not associated with a chromosome.")
 
@@ -303,7 +333,7 @@ def main() -> None:
             if st.button('Click to plot!'):
 
                 st.write('Plotting!')
-                display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta)
+                display_circos_plot(data, full_data, track_cols, bar_color, line_color, genomic_ranges, species_selection, genome_meta, omit_gene_id_legend, rename_cols_dict)
             
                 show_example_plots_bool = False
 
@@ -533,7 +563,8 @@ def omit_median_prox_data(data, omit_pct: int):
     return (data < lower_bound) | (data > upper_bound)
 
 
-def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line_color, genomic_ranges, species_selection, genome_meta) -> None:
+def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line_color, genomic_ranges, species_selection, 
+                        genome_meta, omit_gene_id_legend: bool, rename_cols_dict: dict) -> None:
     
     # Get desired_data maximum to give space for yticks
     maxes = [max(desired_data) for desired_col, _, desired_data, _, _, _, _ in track_cols if desired_col != 'Gene Location']
@@ -709,18 +740,20 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
 
     for index, (label, plot_type, track_index) in enumerate(exp_cols):
 
-        if plot_type == 'bar' or plot_type == 'line':
+        col_name = label
 
-            # Shorten title if we are examining Expression level
-            if label == 'Expression level (average normalized FPKM of all 36 samples)':
-                label = 'Average normalized FPKM expression'
+        if label in rename_cols_dict:
+            if rename_cols_dict[label] != label:
+                col_name = rename_cols_dict[label]
+
+        if plot_type == 'bar' or plot_type == 'line':
 
             circos.colorbar(
                 bounds=(0.92, 1+index*0.1, 0.2, 0),
                 vmin=sector_df[label].min(),
                 vmax=sector_df[label].max(),
                 orientation="horizontal",
-                label=f'Track {track_index+1}: ' + label,
+                label=f'Track {track_index+1}: ' + col_name,
                 label_kws=dict(size=8, color="black"),
                 tick_kws=dict(labelsize=8, colors="black")
             )
@@ -732,7 +765,7 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
                 vmax=sector_df[label].max(),
                 cmap="coolwarm",
                 orientation="horizontal",
-                label=f'Track {track_index+1}: ' + label,
+                label=f'Track {track_index+1}: ' + col_name,
                 label_kws=dict(size=8, color="black"),
                 tick_kws=dict(labelsize=8, colors="black")
             )
@@ -744,24 +777,26 @@ def display_circos_plot(data: dict, full_data, track_cols: list, bar_color, line
     
     add_species_title(species_selection, circos, num_tracks=len(track_cols))
 
-    # Add legend for selected gene IDs
-    include_gene_loc_list = [include_gene_loc for _, _, _, _, _, _, include_gene_loc in track_cols]
-    exp_cols_all = [col for col, _, _, _, _, _, _ in track_cols]
+    if not omit_gene_id_legend:
 
-    if True in include_gene_loc_list or 'Gene Location' in exp_cols_all:
+        # Add legend for selected gene IDs
+        include_gene_loc_list = [include_gene_loc for _, _, _, _, _, _, include_gene_loc in track_cols]
+        exp_cols_all = [col for col, _, _, _, _, _, _ in track_cols]
 
-        scatter_legend = circos.ax.legend(
-            handles=[plt.Line2D([0], [0], color=row[-1], marker='o', ls='None', ms=8) for row in genomic_ranges],  
-            labels=[row[4] for row in genomic_ranges],  
-            bbox_to_anchor=(-0.1, 1.1),
-            loc='upper left',
-            fontsize=8,
-            title="Gene ID",
-            handlelength=2
-        )
+        if True in include_gene_loc_list or 'Gene Location' in exp_cols_all:
 
-        scatter_legend._legend_title_box._text_pad = 5
-        circos.ax.add_artist(scatter_legend)
+            scatter_legend = circos.ax.legend(
+                handles=[plt.Line2D([0], [0], color=row[-1], marker='o', ls='None', ms=8) for row in genomic_ranges],  
+                labels=[row[4] for row in genomic_ranges],  
+                bbox_to_anchor=(-0.1, 1.1),
+                loc='upper left',
+                fontsize=8,
+                title="Gene ID",
+                handlelength=2
+            )
+
+            scatter_legend._legend_title_box._text_pad = 5
+            circos.ax.add_artist(scatter_legend)
 
     # Add legend for sliders 
     removal_legend_items = [
